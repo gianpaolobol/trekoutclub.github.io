@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mappa delle Escursioni – TREK OUT</title>
+
+  <!-- Leaflet core -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <!-- Leaflet‑GPX plugin (per tracce) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
+
+  <style>
+.top-nav {
+  position: absolute;
+  top: 20px;
+  left: 8px;
+  z-index: 999;
+}
+.top-nav ul {
+  list-style: none;
+  display: flex;
+  gap: 8px;
+}
+.top-nav li {
+  display: inline;
+}
+.top-nav a {
+  text-decoration: none;
+  color: #2e5c2e;
+  font-weight: bold;
+  background: rgba(255,255,255,0.9);
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: background 0.3s;
+}
+.top-nav a:hover {
+  background: #eaf4ea;
+}
+.top-nav a.active {
+  background: #cde3cd;
+}
+
+
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;font-family:'Segoe UI',sans-serif;background:url('https://freight.cargo.site/t/original/i/G2383555343461152168855842842345/sfondo.jpg') center/cover fixed no-repeat}
+    .container{max-width:900px;margin:auto;padding:20px;background:rgba(255,255,255,.9);border-radius:10px;box-shadow:0 0 15px rgba(0,0,0,.3)}
+    .logo{text-align:center;margin-top:50px;margin-bottom:20px}
+    .logo img{max-width:200px}
+    h1{text-align:center;color:#2e5c2e;font-size:2.5em;margin-bottom:10px}
+    .intro{text-align:center;font-size:1.6em;color:#2e5c2e;margin-bottom:30px}
+    h2{color:#2e5c2e;margin-top:30px;font-size:1.8em}
+    .filters{display:flex;justify-content:center;gap:15px;margin:20px 0}
+    .filters label{font-weight:bold;color:#2e5c2e}
+    .filters select{padding:5px 10px;font-size:1em}
+    #map{width:100%;height:450px;border:2px solid #2e5c2e;border-radius:5px;margin-bottom:30px}
+    .stats{display:flex;flex-wrap:wrap;justify-content:space-around;text-align:center;margin-bottom:20px}
+    .stat-box{background:#eaf4ea;border:1px solid #2e5c2e;border-radius:10px;padding:15px 25px;margin:10px;min-width:150px}
+    .stat-box h3{color:#2e5c2e;font-size:2em;margin-bottom:5px}
+    .stat-box p{color:#2e5c2e;font-size:1em}
+    footer{text-align:center;padding:20px;font-size:.9em;color:#f5f5dc}
+    /* Modal */
+    #modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:1000;justify-content:center;align-items:center}
+    .modal-content{background:#fff;border-radius:10px;max-width:600px;width:90%;padding:20px;position:relative}
+    .modal-content img{width:100%;border-radius:10px;margin-bottom:15px}
+    .close{position:absolute;top:10px;right:15px;font-size:1.8em;color:#333;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="container">
+
+<nav class="top-nav">
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="mappaescursioni3.htm" class="active">Mappa</a></li>
+    <li><a href="escursioni.html">Escursioni</a></li>
+    <li><a href="contatti.html">Contatti</a></li>
+  </ul>
+</nav>
+
+    <div class="logo"><img src="https://freight.cargo.site/t/original/i/I2388412346992078413163113473769/trekout_logo.png" alt="Logo TREK OUT" /></div>
+    <h1>Mappa delle Escursioni</h1>
+    <div class="intro">Scopri dove si trovano le nostre avventure</div>
+
+    <h2>Filtra per difficoltà</h2>
+    <div class="filters">
+      <label for="difficulty">Difficoltà:</label>
+      <select id="difficulty">
+        <option value="all">Tutte</option>
+        <option value="facile">Facile</option>
+        <option value="media">Media</option>
+        <option value="difficile">Difficile</option>
+      </select>
+    </div>
+
+    <h2>Seleziona un'Escursione</h2>
+    <p style="text-align:center;color:#2e5c2e;margin-bottom:15px">Clicca su un marker nella mappa per vedere i dettagli dell'escursione</p>
+    <div id="map"></div>
+
+    <h2>Statistiche</h2>
+    <div class="stats">
+      <div class="stat-box"><h3>6</h3><p>Totale Escursioni</p></div>
+      <div class="stat-box"><h3>5</h3><p>Regioni Coperte</p></div>
+      <div class="stat-box"><h3>€53</h3><p>Prezzo Medio</p></div>
+      <div class="stat-box"><h3>4.8</h3><p>Rating Medio</p></div>
+    </div>
+  </div>
+  <footer><strong>© 2025 TREK OUT club – Tutti i diritti riservati</strong></footer>
+
+  <!-- Modal per foto/descrizione -->
+  <div id="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeModal()">&times;</span>
+      <img id="modal-img" src="" alt="foto escursione" />
+      <h3 id="modal-title" style="color:#2e5c2e"></h3>
+      <p id="modal-desc" style="color:#2e5c2e;margin:10px 0 20px"></p>
+      <a id="modal-link" href="#" target="_blank" style="background:#2e5c2e;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none">Pagina di dettaglio</a>
+    </div>
+  </div>
+
+  <script>
+  // 1. Dati escursioni (lat, lon, difficoltà, durata, ecc.)
+  const excursions = [
+    {
+      name: "Zocca",
+      lat: 44.34566,
+      lon: 10.99308,
+      difficulty: "media",
+      duration: 1,
+      gpx: "gpx/zocca.gpx",
+      photo: "img/zocca.jpg",
+      description: "Panorami mozzafiato sull'Appennino e visita al borgo di Vasco Rossi.",
+      detail: "zocca.html"
+    },
+    {
+      name: "Cascate di Labante",
+      lat: 44.26036,
+      lon: 11.03634,
+      difficulty: "facile",
+      duration: 1,
+      gpx: "gpx/labante.gpx",
+      photo: "img/labante.jpg",
+      description: "Spettacolari cascate carsiche tra grotte e muschi.",
+      detail: "labante.html"
+    },
+    {
+      name: "Castello di Monteveglio",
+      lat: 44.46667,
+      lon: 11.08333,
+      difficulty: "facile",
+      duration: 1,
+      gpx: "gpx/monteveglio.gpx",
+      photo: "img/monteveglio.jpg",
+      description: "Sentiero ad anello nel parco regionale, con visita al borgo medievale.",
+      detail: "monteveglio.html"
+    },
+    {
+      name: "Castello di Serravalle (Pignoletto)",
+      lat: 44.43300,
+      lon: 11.03300,
+      difficulty: "facile",
+      duration: 1,
+      gpx: "gpx/serravalle.gpx",
+      photo: "img/serravalle.jpg",
+      description: "Tra vigneti di Pignoletto e rocche storiche.",
+      detail: "serravalle.html"
+    },
+    {
+      name: "Savigno",
+      lat: 44.38300,
+      lon: 11.06700,
+      difficulty: "media",
+      duration: 2,
+      gpx: "gpx/savigno.gpx",
+      photo: "img/savigno.jpg",
+      description: "Escursione al paese del tartufo con pernottamento in rifugio.",
+      detail: "savigno.html"
+    },
+    {
+      name: "Montese",
+      lat: 44.26944,
+      lon: 10.94583,
+      difficulty: "difficile",
+      duration: 2,
+      gpx: "gpx/montese.gpx",
+      photo: "img/montese.jpg",
+      description: "Due giorni fra storia della Linea Gotica e panorami montani.",
+      detail: "montese.html"
+    }
+  ];
+
+  // 2. Mappa centrata
+  const map = L.map('map').setView([44.35, 11.0], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // 3. GPX layer placeholder (uno alla volta)
+  let activeTrack;
+  const gpxOptions = {
+    async: true,
+    marker_options: {startIconUrl:'' , endIconUrl: ''}
+  };
+
+  // 4. Crea marker + click handler
+  const markers = [];
+  excursions.forEach((exc, idx) => {
+    const marker = L.marker([exc.lat, exc.lon]).addTo(map);
+    marker.difficulty = exc.difficulty;
+    marker.on('click', () => {
+      // rimuovo traccia precedente
+      if(activeTrack){ map.removeLayer(activeTrack); }
+      // carico nuova traccia gpx
+    activeTrack = new L.GPX(exc.gpx, gpxOptions)
+  .on('loaded', e => {
+    map.fitBounds(e.target.getBounds(), {padding:[20,20]});
+  })
+  .on('error', e => {
+    console.error(`Errore nel caricamento di ${exc.gpx}`, e);
+    alert(`Errore nel caricamento della traccia GPX: ${exc.gpx}`);
+  })
+  .addTo(map);
+
+      // apro modal con foto/descrizione
+      openModal(exc);
+    });
+    markers.push(marker);
+  });
+
+  // 5. Filtro difficoltà
+  function filterMarkers(level){
+    markers.forEach(m=>{
+      if(level==='all' || m.difficulty===level){ if(!map.hasLayer(m)) m.addTo(map); }
+      else { if(map.hasLayer(m)) map.removeLayer(m); }
+    });
+  }
+  document.getElementById('difficulty').addEventListener('change', e => filterMarkers(e.target.value));
+
+  // 6. Modal helpers
+  function openModal(exc){
+    document.getElementById('modal-img').src = exc.photo;
+    document.getElementById('modal-title').innerText = exc.name + (exc.duration>1?` – ${exc.duration} giorni`:` – ${exc.duration} giorno`);
+    document.getElementById('modal-desc').innerText = exc.description;
+    const link = document.getElementById('modal-link');
+    link.href = exc.detail;
+    document.getElementById('modal').style.display='flex';
+  }
+  function closeModal(){ document.getElementById('modal').style.display='none'; }
+  window.closeModal = closeModal; // expose to global for inline onclick
+  </script>
+</body>
+</html>
